@@ -141,6 +141,71 @@ async function tryCommand(command: string, args: string[]): Promise<ClipboardRes
 }
 
 /**
+ * Write text to the system clipboard
+ */
+export async function writeClipboard(text: string): Promise<ClipboardResult> {
+  const platform = process.platform;
+  let command: string;
+  let args: string[];
+
+  switch (platform) {
+    case 'darwin':
+      command = 'pbcopy';
+      args = [];
+      break;
+    case 'win32':
+      command = 'powershell';
+      args = ['-NoProfile', '-Command', 'Set-Clipboard'];
+      break;
+    case 'linux':
+      command = 'xclip';
+      args = ['-selection', 'clipboard'];
+      break;
+    default:
+      return { success: false, error: `Unsupported platform: ${platform}` };
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    const proc = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+    let stderr = '';
+
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        proc.kill();
+        resolve({ success: false, error: 'Clipboard write timed out' });
+      }
+    }, 5000);
+
+    proc.stderr.on('data', (data) => { stderr += data.toString(); });
+
+    proc.on('error', (err: any) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeoutId);
+        resolve({ success: false, error: err.message });
+      }
+    });
+
+    proc.on('close', (code) => {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(timeoutId);
+        if (code === 0) {
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, error: stderr || `Command exited with code ${code}` });
+        }
+      }
+    });
+
+    proc.stdin.write(text);
+    proc.stdin.end();
+  });
+}
+
+/**
  * Check if clipboard access is available on this system
  */
 export async function isClipboardAvailable(): Promise<boolean> {

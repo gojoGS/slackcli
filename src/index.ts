@@ -8,6 +8,7 @@ import { createCanvasCommand } from './commands/canvas.ts';
 import { createUpdateCommand } from './commands/update.ts';
 import { createSavedCommand } from './commands/saved.ts';
 import { createSearchCommand } from './commands/search.ts';
+import { createTuiCommand } from './commands/tui.ts';
 import { notifyIfUpdateAvailable } from './lib/updater.ts';
 import chalk from 'chalk';
 
@@ -28,6 +29,7 @@ program.addCommand(createConversationsCommand());
 program.addCommand(createMessagesCommand());
 program.addCommand(createSavedCommand());
 program.addCommand(createSearchCommand());
+program.addCommand(createTuiCommand());
 program.addCommand(createUpdateCommand());
 
 // Show update notification after command output if a newer version is cached
